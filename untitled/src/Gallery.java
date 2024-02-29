@@ -1,11 +1,14 @@
+import javax.swing.*;
 import java.sql.*;
 import java.sql.DriverManager;
+import java.util.Scanner;
 
 public class Gallery {
     static final String URL = "jdbc:postgresql://localhost:5432/postgres";
     static final String USERNAME = "postgres";
     static final String PASSWORD = "18092005";
     private Connection connection;
+
     public Gallery() {
         try {
 
@@ -15,27 +18,37 @@ public class Gallery {
             e.printStackTrace();
         }
     }
+
     public Connection getConnection() {
         return connection;
     }
-    public void addArtworkToCatalogue(String artworkName, double price) {
-        try {
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO catalogue (artwork_name, price) VALUES (?, ?)");
-            statement.setString(1, artworkName);
-            statement.setDouble(2, price);
-            statement.executeUpdate();
+
+    public void addArtworkToCatalogue() {
+        try (Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD)) {
+            String artworkName = JOptionPane.showInputDialog("Enter artwork name: ");
+            String numberInput = JOptionPane.showInputDialog("Enter your cost: ");
+            double price = Double.parseDouble(numberInput);
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO catalogue (artwork_name, price) VALUES (?, ?)")) {
+                statement.setString(1, artworkName);
+                statement.setDouble(2, price);
+                statement.executeUpdate();
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
+
     public void displayAvailableArtworks() {
         try {
             if (connection != null) {
                 Statement statement = connection.createStatement();
                 ResultSet resultSet = statement.executeQuery("SELECT * FROM catalogue");
                 while (resultSet.next()) {
-                    System.out.println("Artwork: " + resultSet.getString("artwork_name") + ", Price: $" + resultSet.getDouble("price"));
-                }
+                    JOptionPane.showMessageDialog(null, "Your Artwork's: " + resultSet.getString("artwork_name") +
+                                    ", Price: $" + resultSet.getDouble("price"), "title",
+                            JOptionPane.PLAIN_MESSAGE);                }
             } else {
                 System.out.println("Connection to database is null.");
             }
@@ -43,8 +56,10 @@ public class Gallery {
             e.printStackTrace();
         }
     }
-    public void deleteArtworkFromCatalogue(String artworkName) {
+
+    public void deleteArtworkFromCatalogue() {
         try {
+            String artworkName = JOptionPane.showInputDialog("Enter artwork name: ");
             PreparedStatement statement = connection.prepareStatement("DELETE FROM catalogue WHERE artwork_name = ?");
             statement.setString(1, artworkName);
             int rowsAffected = statement.executeUpdate();
@@ -53,10 +68,12 @@ public class Gallery {
             } else {
                 System.out.println(artworkName + " not found in catalogue.");
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        }catch(SQLException e)
+            {
+                e.printStackTrace();
+            }
         }
-    }
+
     public Artwork findArtworkByName(String artworkName) {
         Artwork artwork = null;
         try {
@@ -71,15 +88,5 @@ public class Gallery {
         }
         return artwork;
     }
-    public void createOrder(ArtConnoisseur artConnoisseur, Basket basket) {
-        try {
-            PreparedStatement statement = connection.prepareStatement("INSERT INTO orders (artConnoisseur_name, basket_price) VALUES (?, ?)");
-            statement.setString(1, artConnoisseur.getArtConnoisseurName());
-            statement.setDouble(2, basket.getBasketPrice());
-            statement.executeUpdate();
-            System.out.println("Order placed by " + artConnoisseur.getArtConnoisseurName() + ". Basket Price: $" + basket.getBasketPrice());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+
 }
